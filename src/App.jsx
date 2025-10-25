@@ -479,7 +479,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
               <Brain className="w-8 h-8 text-indigo-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Student Forecast AI</h1>
-                <p className="text-sm text-gray-600">Powered by Groq AI & Neural Prophet</p>
+                <p className="text-sm text-gray-600">Powered by Groq AI & Sarimax</p>
               </div>
             </div>
             <div className="flex gap-2 items-center">
@@ -510,7 +510,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                 onClick={() => setView('dashboard')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   view === 'dashboard' 
-                    ? 'bg-indigo-600 text-white' 
+                    ? 'bg-indigo-600 text-black' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -520,7 +520,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                 onClick={() => setView('individual')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   view === 'individual' 
-                    ? 'bg-indigo-600 text-white' 
+                    ? 'bg-indigo-600 text-black' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -647,7 +647,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                                 setSelectedStudent(student);
                                 setView('individual');
                               }}
-                              className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 transition-colors"
+                              className="text-sm bg-indigo-600 text-black px-3 py-1 rounded-lg hover:bg-indigo-700 transition-colors"
                             >
                               View Details
                             </button>
