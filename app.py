@@ -3,6 +3,7 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from neuralprophet import NeuralProphet
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -11,7 +12,7 @@ CORS(app)
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'healthy', 'message': 'Neural Prophet API is running'}), 200
+    return jsonify({'status': 'healthy', 'message': 'Sarimax API is running'}), 200
 
 
 
@@ -69,7 +70,7 @@ def forecast_attendance():
             
             # Generate forecast
             forecast = model_fit.forecast(steps=periods)
-            forecast_values = forecast.values
+            forecast_values = forecast
             
         except Exception as e:
             print(f"SARIMA failed: {str(e)}, using alternative")
@@ -113,6 +114,5 @@ def forecast_attendance():
 
 
 if __name__ == '__main__':
-    print("Starting Neural Prophet Forecasting API on port 5000...")
-    print("Ensure you have installed: pip install neuralprophet flask flask-cors pandas numpy")
+    print("Starting SARIMAX Forecasting API on port 5000...")
     app.run(debug=True, port=5000, host='0.0.0.0')

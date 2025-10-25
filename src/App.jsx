@@ -79,7 +79,7 @@ const processCSVData = (csvData) => {
   return students.filter(s => s.dailyAttendance.length > 0 || s.examScores.length > 0);
 };
 
-const forecastAttendanceWithNeuralProphet = async (data, periods = 30, apiUrl = 'http://localhost:5000/forecast') => {
+const forecastAttendanceWithSarimax = async (data, periods = 30, apiUrl = 'http://localhost:5000/forecast') => {
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -107,7 +107,7 @@ const forecastAttendanceWithNeuralProphet = async (data, periods = 30, apiUrl = 
       throw new Error(result.error || 'Unknown error from API');
     }
   } catch (error) {
-    console.error('Neural Prophet API Error:', error);
+    console.error('Sarimax API Error:', error);
     const avg = data.length > 0 ? data.reduce((a, b) => a + b, 0) / data.length : 0.5;
     return {
       forecast: Array(periods).fill(avg),
@@ -222,7 +222,7 @@ const App = () => {
     setGeneratingInsights(true);
     
     const attendanceData = selectedStudent.dailyAttendance.map(d => d.present);
-    const result = await forecastAttendanceWithNeuralProphet(attendanceData, 30, apiUrl);
+    const result = await forecastAttendanceWithSarimax(attendanceData, 30, apiUrl);
     
     setForecastData(result.forecast);
     setForecastMethod(result.method);
@@ -489,7 +489,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                 'bg-gray-100 text-gray-700'
               }`}>
                 <Activity className="w-4 h-4" />
-                {apiStatus === 'connected' ? 'Neural Prophet API Connected' :
+                {apiStatus === 'connected' ? 'Sarimax API Connected' :
                  apiStatus === 'disconnected' ? 'API Offline - Using Fallback' :
                  'Checking...'}
               </div>
@@ -688,7 +688,7 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
               <div className="bg-white p-12 rounded-xl shadow-md border border-gray-200">
                 <div className="flex flex-col items-center justify-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
-                  <p className="text-gray-700 font-medium">Generating forecasts with Neural Prophet...</p>
+                  <p className="text-gray-700 font-medium">Generating forecasts with Sarimax...</p>
                   <p className="text-gray-500 text-sm mt-2">This may take 10-30 seconds</p>
                 </div>
               </div>
@@ -758,14 +758,15 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                       Attendance Trend & 30-Day Forecast
                     </h3>
                     <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
-                      forecastMethod === 'neural_prophet' ? 'bg-indigo-100 text-indigo-700' :
+                      forecastMethod === 'sarimax' ? 'bg-indigo-100 text-indigo-700' :
                       forecastMethod === 'fallback_average' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>
-                      {forecastMethod === 'neural_prophet' ? '🧠 Neural Prophet Model' :
+                      {forecastMethod === 'nsarimax' ? '📈 SARIMAX Model' :
                        forecastMethod === 'fallback_average' ? '⚠️ Fallback: Average' :
                        'Processing...'}
                     </span>
+
                   </div>
                   <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={getAttendanceChartData()}>
@@ -794,12 +795,12 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                         formatter={(value, name) => {
                           if (value === null) return ['N/A', name];
-                          return [`${value.toFixed(1)}%`, name === 'actual' ? 'Historical' : 'Neural Prophet Forecast'];
+                          return [`${value.toFixed(1)}%`, name === 'actual' ? 'Historical' : 'SARIMAX Forecast'];
                         }}
                       />
                       <Legend 
                         wrapperStyle={{ paddingTop: '20px' }}
-                        formatter={(value) => value === 'actual' ? 'Historical Attendance' : 'Neural Prophet Forecast'}
+                        formatter={(value) => value === 'actual' ? 'Historical Attendance' : 'SARIMAX Forecast'}
                       />
                       <Area 
                         type="monotone" 
