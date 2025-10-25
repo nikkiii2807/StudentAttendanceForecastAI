@@ -231,33 +231,335 @@ const App = () => {
     setInsights(insightData);
     setGeneratingInsights(false);
   };
-  
+   
+  //OG Niks Code:
+// const generateInsightsWithGroq = async (student, forecast) => {
+//   const avgAttendance = student.dailyAttendance.length > 0
+//     ? student.dailyAttendance.slice(-30).reduce((sum, d) => sum + d.present, 0) / Math.min(30, student.dailyAttendance.length)
+//     : 0;
+
+//   const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
+//   const forecastAvg = forecast.length > 0 ? forecast.reduce((a, b) => a + b, 0) / forecast.length : 0;
+
+//   const prompt = `You are an AI academic analyst. Analyze this student data and provide insights in JSON format.
+
+// Student: ${student.name}
+// Subject: ${student.subject}
+// Recent 30-day Attendance: ${(avgAttendance * 100).toFixed(1)}%
+// Last Exam Score: ${lastScore.toFixed(1)}%
+// Forecasted 30-day Attendance: ${(forecastAvg * 100).toFixed(1)}%
+// Exam History: ${JSON.stringify(student.examScores.slice(-3))}
+
+// Provide a response in this EXACT JSON format (no markdown, just pure JSON):
+// {
+//   "summary": "Brief 2-3 sentence analysis of student performance and trends",
+//   "riskLevel": "low" or "medium" or "high",
+//   "failProbability": number between 0-100,
+//   "alerts": ["alert 1", "alert 2"],
+//   "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+// }`;
+
+//   try {
+//     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || ''}`,
+//       },
+//       body: JSON.stringify({
+//         model: "llama-3.3-70b-versatile", // updated to match Groq’s example
+//         messages: [{ role: "user", content: prompt }],
+//         temperature: 0.3,
+//       }),
+//     });
+
+//     if (!response.ok) throw new Error(`API responded with status ${response.status}`);
+
+//     const data = await response.json();
+//     const content = data?.choices?.[0]?.message?.content || "";
+
+//     let parsedInsights;
+//     try {
+//       const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+//       parsedInsights = JSON.parse(cleanContent);
+
+//       if (!Array.isArray(parsedInsights.recommendations)) parsedInsights.recommendations = [];
+
+//     } catch (e) {
+//       console.warn("Failed to parse Groq response as JSON, using fallback");
+//       parsedInsights = {
+//         summary: content.substring(0, 200) || "Analysis complete. Review the charts for detailed trends.",
+//         riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
+//         failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+//         alerts: avgAttendance < 0.7 ? ["Low attendance detected"] : [],
+//         recommendations: [] // LLM will fill next time
+//       };
+//     }
+
+//     return parsedInsights;
+
+    
+
+//   } catch (error) {
+//     console.error("Groq API error:", error);
+
+//     return {
+//       summary: `${student.name} has ${(avgAttendance * 100).toFixed(1)}% attendance and scored ${lastScore.toFixed(1)}% on the last exam.`,
+//       riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
+//       failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+//       alerts: [
+//         ...(avgAttendance < 0.7 ? ["Attendance below 70% threshold"] : []),
+//         ...(lastScore < 60 ? ["Recent exam performance concerning"] : [])
+//       ],
+//       recommendations: [] // no hardcoded recommendations
+//     };
+//   }
+// };
+
+//Miral Tested1:
+// const generateInsightsWithGroq = async (student, forecast) => {
+//   // --- 1. Attendance Summary ---
+//   const attendanceSummary = (() => {
+//     const data = student.dailyAttendance;
+//     if (!data.length) return "No attendance data.";
+
+//     const totalDays = data.length;
+//     const overallAvg = (data.reduce((s, d) => s + d.present, 0) / totalDays * 100).toFixed(1);
+
+//     // Detect skipped weekdays
+//     const weekdayMap = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+//     const weekdayCounts = Array(7).fill(0);
+//     data.forEach(d => {
+//       const day = new Date(d.date).getDay();
+//       if (!d.present) weekdayCounts[day] += 1;
+//     });
+//     const skippedWeekdays = weekdayCounts
+//       .map((c, i) => c > 0 ? weekdayMap[i] : null)
+//       .filter(Boolean);
+
+//     // Streaks
+//     let currentStreak = 0, maxStreak = 0;
+//     data.forEach(d => {
+//       if (d.present) currentStreak++;
+//       else currentStreak = 0;
+//       if (currentStreak > maxStreak) maxStreak = currentStreak;
+//     });
+
+//     return `Overall attendance: ${overallAvg}%. Skipped weekdays: ${skippedWeekdays.join(', ') || 'None'}. Longest attendance streak: ${maxStreak} days.`;
+//   })();
+
+//   // --- 2. Score Summary ---
+//   const scoreSummary = (() => {
+//     const scores = student.examScores.map(s => s.score);
+//     if (!scores.length) return "No exam score data.";
+
+//     const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+//     const trend = scores[scores.length - 1] - scores[0] > 0 ? 'improving' :
+//                   scores[scores.length - 1] - scores[0] < 0 ? 'declining' : 'stable';
+//     const highLow = `Highest: ${Math.max(...scores)}, Lowest: ${Math.min(...scores)}`;
+//     return `Average score: ${avgScore}. Trend over last ${scores.length} exams: ${trend}. ${highLow}.`;
+//   })();
+
+//   // --- 3. Forecast Summary ---
+//   const forecastAvg = forecast.length > 0 ? forecast.reduce((a, b) => a + b, 0) / forecast.length : 0;
+//   const forecastTrend = forecast.length > 1 ? (forecast[forecast.length - 1] - forecast[0] > 0 ? 'likely increasing' : 'likely decreasing') : 'stable';
+
+//   // --- 4. Construct Prompt ---
+//   const prompt = `You are an AI academic analyst. Analyze this student data and provide detailed insights in JSON format.
+
+// Student: ${student.name}
+// Subject: ${student.subject}
+
+// Attendance Summary (last 5 months):
+// ${attendanceSummary}
+
+// Test Score Summary (last 10 exams):
+// ${scoreSummary}
+
+// Forecasted 30-day Attendance:
+// ${(forecastAvg * 100).toFixed(1)}%, trend: ${forecastTrend}
+
+// Identify patterns such as:
+// - Specific days student tends to skip
+// - Sudden drops or spikes in attendance or scores
+// - Long streaks of high or low performance
+
+// Provide a response in EXACT JSON format (no markdown, just JSON):
+
+// {
+//   "summary": "Brief 3-5 sentence analysis of student performance and trends",
+//   "riskLevel": "low" or "medium" or "high",
+//   "failProbability": number between 0-100,
+//   "alerts": ["alert 1", "alert 2"],
+//   "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+// }`;
+
+//   // --- 5. Call Groq API ---
+//   try {
+//     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || ''}`,
+//       },
+//       body: JSON.stringify({
+//         model: "llama-3.3-70b-versatile",
+//         messages: [{ role: "user", content: prompt }],
+//         temperature: 0.3,
+//       }),
+//     });
+
+//     if (!response.ok) throw new Error(`API responded with status ${response.status}`);
+//     const data = await response.json();
+//     const content = data?.choices?.[0]?.message?.content || "";
+
+//     let parsedInsights;
+//     try {
+//       const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+//       parsedInsights = JSON.parse(cleanContent);
+
+//       if (!Array.isArray(parsedInsights.recommendations)) parsedInsights.recommendations = [];
+
+//     } catch (e) {
+//       console.warn("Failed to parse Groq response as JSON, using fallback");
+//       const avgAttendance = student.dailyAttendance.length > 0
+//         ? student.dailyAttendance.reduce((sum, d) => sum + d.present, 0) / student.dailyAttendance.length
+//         : 0;
+//       const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
+//       parsedInsights = {
+//         summary: content.substring(0, 200) || "Analysis complete. Review the charts for detailed trends.",
+//         riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
+//         failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+//         alerts: avgAttendance < 0.7 ? ["Low attendance detected"] : [],
+//         recommendations: []
+//       };
+//     }
+
+//     return parsedInsights;
+
+//   } catch (error) {
+//     console.error("Groq API error:", error);
+
+//     const avgAttendance = student.dailyAttendance.length > 0
+//       ? student.dailyAttendance.reduce((sum, d) => sum + d.present, 0) / student.dailyAttendance.length
+//       : 0;
+//     const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
+
+//     return {
+//       summary: `${student.name} has ${(avgAttendance * 100).toFixed(1)}% attendance and scored ${lastScore.toFixed(1)}% on the last exam.`,
+//       riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
+//       failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+//       alerts: [
+//         ...(avgAttendance < 0.7 ? ["Attendance below 70% threshold"] : []),
+//         ...(lastScore < 60 ? ["Recent exam performance concerning"] : [])
+//       ],
+//       recommendations: []
+//     };
+//   }
+// };
+
 const generateInsightsWithGroq = async (student, forecast) => {
-  const avgAttendance = student.dailyAttendance.length > 0
-    ? student.dailyAttendance.slice(-30).reduce((sum, d) => sum + d.present, 0) / Math.min(30, student.dailyAttendance.length)
-    : 0;
+  // --- 1. Attendance Summary ---
+  const attendanceSummary = (() => {
+    const data = student.dailyAttendance;
+    if (!data.length) return "No attendance data.";
 
-  const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
+    const totalDays = data.length;
+    const overallAvg = (data.reduce((s, d) => s + d.present, 0) / totalDays * 100).toFixed(1);
+
+    // Detect skipped weekdays
+    const weekdayMap = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+    const weekdayCounts = Array(7).fill(0);
+    data.forEach(d => {
+      const day = new Date(d.date).getDay();
+      if (!d.present) weekdayCounts[day] += 1;
+    });
+    const skippedWeekdays = weekdayCounts
+      .map((c, i) => c > 0 ? weekdayMap[i] : null)
+      .filter(Boolean);
+
+    // Streaks
+    let currentStreak = 0, maxStreak = 0;
+    data.forEach(d => {
+      if (d.present) currentStreak++;
+      else currentStreak = 0;
+      if (currentStreak > maxStreak) maxStreak = currentStreak;
+    });
+
+    return `Overall attendance: ${overallAvg}%. Skipped weekdays: ${skippedWeekdays.join(', ') || 'None'}. Longest attendance streak: ${maxStreak} days.`;
+  })();
+
+  // --- 2. Score Summary ---
+  const scoreSummary = (() => {
+    const scores = student.examScores.map(s => s.score);
+    if (!scores.length) return "No exam score data.";
+
+    const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+    const trend = scores[scores.length - 1] - scores[0] > 0 ? 'improving' :
+                  scores[scores.length - 1] - scores[0] < 0 ? 'declining' : 'stable';
+    const highLow = `Highest: ${Math.max(...scores)}, Lowest: ${Math.min(...scores)}`;
+    return `Average score: ${avgScore}. Trend over last ${scores.length} exams: ${trend}. ${highLow}.`;
+  })();
+
+  const scoreAvg = student.examScores.length > 0
+  ? student.examScores.reduce((a, b) => a + b.score, 0) / student.examScores.length
+  : 0;
+
+const scoreTrend = student.examScores.length > 1
+  ? student.examScores[student.examScores.length - 1].score - student.examScores[0].score
+  : 0; // positive means improving, negative declining
+
+const attendanceAvg = student.dailyAttendance.length > 0
+  ? student.dailyAttendance.reduce((s, d) => s + d.present, 0) / student.dailyAttendance.length
+  : 1;
+
+// Base probability
+let failProb = (1 - attendanceAvg) * 30 + (1 - scoreAvg / 100) * 70;
+
+// Adjust for trend
+if ((scoreAvg>60) && (scoreTrend > 0)) failProb *= 0.5; // improving scores reduce probability
+else if ((scoreAvg>70) && (scoreTrend < 0)) failProb *= 0.65;
+else if ((scoreAvg<65) && (scoreTrend > 0)) failProb *= 0.65;
+else if ((scoreAvg<60)&&(scoreTrend < 0)) failProb *= 1.25; // declining scores increase probability
+
+failProb = Math.min(Math.max(Math.round(failProb), 0), 100); // clamp 0-100
+
+
+  // --- 3. Forecast Summary ---
   const forecastAvg = forecast.length > 0 ? forecast.reduce((a, b) => a + b, 0) / forecast.length : 0;
+  const forecastTrend = forecast.length > 1 ? (forecast[forecast.length - 1] - forecast[0] > 0 ? 'likely increasing' : 'likely decreasing') : 'stable';
 
-  const prompt = `You are an AI academic analyst. Analyze this student data and provide insights in JSON format.
+  // --- 4. Construct Prompt ---
+  const prompt = `You are an AI academic analyst. Analyze this student data and provide detailed insights in JSON format.
 
 Student: ${student.name}
 Subject: ${student.subject}
-Recent 30-day Attendance: ${(avgAttendance * 100).toFixed(1)}%
-Last Exam Score: ${lastScore.toFixed(1)}%
-Forecasted 30-day Attendance: ${(forecastAvg * 100).toFixed(1)}%
-Exam History: ${JSON.stringify(student.examScores.slice(-3))}
 
-Provide a response in this EXACT JSON format (no markdown, just pure JSON):
+Attendance Summary (last 5 months):
+${attendanceSummary}
+
+Test Score Summary (last 10 exams):
+${scoreSummary}
+
+Forecasted 30-day Attendance:
+${(forecastAvg * 100).toFixed(1)}%, trend: ${forecastTrend}
+
+Identify patterns such as:
+- Specific days student tends to skip
+- Sudden drops or spikes in attendance or scores
+- Long streaks of high or low performance
+
+Provide a response in EXACT JSON format (no markdown, just JSON):
+
 {
-  "summary": "Brief 2-3 sentence analysis of student performance and trends",
+  "summary": "Brief 3-5 sentence analysis of student performance and trends",
   "riskLevel": "low" or "medium" or "high",
   "failProbability": number between 0-100,
   "alerts": ["alert 1", "alert 2"],
   "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
 }`;
 
+  // --- 5. Call Groq API ---
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -266,14 +568,13 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
         "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || ''}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile", // updated to match Groq’s example
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
       }),
     });
 
     if (!response.ok) throw new Error(`API responded with status ${response.status}`);
-
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content || "";
 
@@ -286,12 +587,16 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
 
     } catch (e) {
       console.warn("Failed to parse Groq response as JSON, using fallback");
+      const avgAttendance = student.dailyAttendance.length > 0
+        ? student.dailyAttendance.reduce((sum, d) => sum + d.present, 0) / student.dailyAttendance.length
+        : 0;
+      const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
       parsedInsights = {
         summary: content.substring(0, 200) || "Analysis complete. Review the charts for detailed trends.",
         riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
-        failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+        failProbability: failProb,
         alerts: avgAttendance < 0.7 ? ["Low attendance detected"] : [],
-        recommendations: [] // LLM will fill next time
+        recommendations: []
       };
     }
 
@@ -300,21 +605,25 @@ Provide a response in this EXACT JSON format (no markdown, just pure JSON):
   } catch (error) {
     console.error("Groq API error:", error);
 
+    const avgAttendance = student.dailyAttendance.length > 0
+      ? student.dailyAttendance.reduce((sum, d) => sum + d.present, 0) / student.dailyAttendance.length
+      : 0;
+    const lastScore = student.examScores[student.examScores.length - 1]?.score || 0;
+
     return {
       summary: `${student.name} has ${(avgAttendance * 100).toFixed(1)}% attendance and scored ${lastScore.toFixed(1)}% on the last exam.`,
       riskLevel: avgAttendance < 0.6 || lastScore < 50 ? "high" : avgAttendance < 0.75 || lastScore < 70 ? "medium" : "low",
-      failProbability: Math.round((1 - avgAttendance) * 50 + (1 - lastScore / 100) * 50),
+      failProbability: failProb,
       alerts: [
         ...(avgAttendance < 0.7 ? ["Attendance below 70% threshold"] : []),
         ...(lastScore < 60 ? ["Recent exam performance concerning"] : [])
       ],
-      recommendations: [] // no hardcoded recommendations
+      recommendations: []
     };
   }
 };
 
 
-  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
