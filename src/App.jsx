@@ -128,7 +128,8 @@ const App = () => {
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [csvUploaded, setCsvUploaded] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [apiUrl, setApiUrl] = useState('http://localhost:5000/forecast');
+  const [apiUrl, setApiUrl] =useState('https://studentattendanceforecastai.onrender.com/forecast');
+
   const [apiStatus, setApiStatus] = useState('unknown');
   
   useEffect(() => {
