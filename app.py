@@ -1,15 +1,51 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-from neuralprophet import NeuralProphet
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import warnings
+import os
+import requests
+from dotenv import load_dotenv
 warnings.filterwarnings('ignore')
+load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist', static_url_path='')
 CORS(app)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+
+
+@app.route('/groq-chat', methods=['POST'])
+def groq_chat():
+    try:
+        data = request.json
+        prompt = data.get("prompt", "")
+        if not prompt:
+            return jsonify({"error": "No prompt provided"}), 400
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}"
+        }
+
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3
+        }
+
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=payload,
+            headers=headers
+        )
+
+        return jsonify(response.json())
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'Sarimax API is running'}), 200
@@ -113,6 +149,15 @@ def forecast_attendance():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
+
 if __name__ == '__main__':
-    print("Starting SARIMAX Forecasting API on port 5000...")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    print("Starting app...")
+    app.run(host='0.0.0.0', port=5000)

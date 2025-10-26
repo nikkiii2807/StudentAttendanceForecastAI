@@ -561,18 +561,13 @@ Provide a response in EXACT JSON format (no markdown, just JSON):
 
   // --- 5. Call Groq API ---
   try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || ''}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      }),
-    });
+    const response = await fetch("/groq-chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
 
     if (!response.ok) throw new Error(`API responded with status ${response.status}`);
     const data = await response.json();
