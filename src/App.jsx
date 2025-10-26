@@ -79,7 +79,7 @@ const processCSVData = (csvData) => {
   return students.filter(s => s.dailyAttendance.length > 0 || s.examScores.length > 0);
 };
 
-const forecastAttendanceWithSarimax = async (data, periods = 30, apiUrl = 'http://localhost:5000/forecast') => {
+const forecastAttendanceWithSarimax = async (data, periods = 30, apiUrl = '/forecast') => {
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
