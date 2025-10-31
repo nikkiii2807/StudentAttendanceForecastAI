@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { AlertCircle, Users, Award, Calendar, Brain, AlertTriangle, CheckCircle, Upload, FileText, Activity } from 'lucide-react';
 import Papa from 'papaparse';
+// Chatbot component
+import Chatbot from './components/Chatbot';
 
 const processCSVData = (csvData) => {
   const studentMap = new Map();
@@ -777,6 +779,8 @@ Provide a response in EXACT JSON format (no markdown, just JSON):
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-x-hidden">
+      {/* Chatbot component */}
+      <Chatbot />
 
       <div className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
